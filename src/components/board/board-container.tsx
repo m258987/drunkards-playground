@@ -1,6 +1,6 @@
 'use client'
 
-import { cards } from '@/constants/deck'
+import { cards } from '@/constants/default-deck'
 import { tiles } from '@/constants/tiles'
 import { GameProvider } from '@/hooks/use-game'
 import { Deck } from '@/models/deck'

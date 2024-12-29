@@ -93,8 +93,19 @@ export default {
             '-webkit-background-position': '100% 100%',
           },
         },
+        'spin-reveal': {
+          from: {
+            transform:
+              'translate(var(--tw-translate-x), var(--tw-translate-y)) rotateY(180deg) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))',
+          },
+          to: {
+            transform:
+              'translate(var(--tw-translate-x), var(--tw-translate-y)) rotateY(0deg) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))',
+          },
+        },
       },
       animation: {
+        'spin-reveal': 'spin-reveal 2s ease-in-out forwards',
         'slide-horizontal': 'slide-horizontal 10s linear infinite',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',

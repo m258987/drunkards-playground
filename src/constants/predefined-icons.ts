@@ -8,7 +8,11 @@ import {
   BadgeIndianRupee,
   BadgeInfo,
   BadgeJapaneseYen,
+  BadgeMinus,
   BadgePercent,
+  BadgePlus,
+  BadgePoundSterling,
+  BadgeRussianRuble,
 } from 'lucide-react'
 
 export const predefinedIcons = [
@@ -22,4 +26,9 @@ export const predefinedIcons = [
   BadgeInfo,
   BadgeJapaneseYen,
   BadgePercent,
+  // 10
+  BadgePlus,
+  BadgeMinus,
+  BadgePoundSterling,
+  BadgeRussianRuble,
 ]

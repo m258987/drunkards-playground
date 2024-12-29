@@ -16,6 +16,7 @@ import _ from 'lodash'
 import { Player } from './player'
 import { Tile } from './tile'
 import { v4 } from 'uuid'
+import { toast } from 'sonner'
 
 export class Game implements IGame {
   #state: GameInnerState = {
@@ -29,6 +30,7 @@ export class Game implements IGame {
     currentPlayer: null,
     selectedCard: null,
     usedCards: [],
+    history: [],
   }
 
   constructor(options: IGameConstructorOptions) {
@@ -54,7 +56,7 @@ export class Game implements IGame {
   pickNextPlayer(): IGame {
     const activePlayers = this.getActivePlayers()
     // if no active remain, the game is over
-    if (!activePlayers.length) {
+    if (!activePlayers.length || activePlayers.length == 1) {
       this.endGame()
       return this
     }
@@ -65,17 +67,34 @@ export class Game implements IGame {
     ) {
       return this
     }
-    // if there is no current player, pick the first froma active
+    // if there is no current player, pick the first from active
     if (!this.#state.currentPlayer) {
       this.#state.currentPlayer = activePlayers[0]
       return this
     }
     // get the next player or loop back to the first one
-    const indexOf = this.#state.players.findIndex(
+    const currentPlayerIndexInArray = this.#state.players.findIndex(
       (p) => p.getName() == this.#state.currentPlayer?.getName()
     )
-    const newPlayer = activePlayers[indexOf + 1] ?? activePlayers[0]
-    this.#state.currentPlayer = newPlayer
+    let iterration = 1
+    let newPlayer: IPlayer | undefined = undefined
+    do {
+      const index =
+        (currentPlayerIndexInArray + iterration) % this.#state.players.length
+      if (this.#state.players[index].getState() == 'ACTIVE') {
+        newPlayer = this.#state.players[index]
+        break
+      }
+      iterration++
+      if (iterration > this.#state.players.length) {
+        break
+      }
+    } while (true)
+
+    if (!newPlayer) {
+      this.endGame()
+    }
+    this.#state.currentPlayer = newPlayer!
     return this
   }
 
@@ -99,7 +118,9 @@ export class Game implements IGame {
   restartGame(): IGame {
     if (this.#state.state == 'PREGAME') return this
     this.#state.state = 'PREGAME'
+    this.#state.selectedCard = null
     this.#state.usedCards = []
+    this.#state.history = []
     this.#state.players.forEach((p) => {
       p.setState('ACTIVE').setPoints(0).setTile(0)
     })
@@ -155,7 +176,7 @@ export class Game implements IGame {
     return this.#state.players
   }
   getActivePlayers(): IPlayer[] {
-    return this.#state.players.filter((p) => p.getState() == 'ACTIVE')
+    return this.#state.players.slice().filter((p) => p.getState() == 'ACTIVE')
   }
   getTiles(): ITile[] {
     return this.#state.tiles
@@ -171,18 +192,20 @@ export class Game implements IGame {
     )
     return activeTiles
   }
-  getTilePlayers(tileIndex: number): IPlayer[] {
+  getTilePlayers(tileIndex: number, activeOnly?: boolean): IPlayer[] {
     const tile = this.#state.tiles?.[tileIndex]
     if (!tile) throw new Error('This tile does not exits')
-    const tilePlayers = this.#state.players.filter(
-      (player) => player.getTile() == tile.getIndex()
-    )
+    const players = activeOnly ? this.getActivePlayers() : this.getPlayers()
+    const tilePlayers = players
+      .slice()
+      .filter((player) => player.getTile() == tile.getIndex())
     return tilePlayers
   }
   pickCard(tile: ITile): IGame {
     if (tile.getType() == 'START') {
       // add points for crossing the start
       this.#state.currentPlayer?.addPoints(1)
+      toast('Тука няма карта, затова взимаш 1 точка.')
       return this
     }
     const type = tile.getType()
@@ -193,13 +216,18 @@ export class Game implements IGame {
     const card = _.sample(cardsOfType)
     if (typeof card == 'undefined') {
       // handle this or end game?
-
-      throw new Error('No cards of this type left')
+      console.error(type, rarities)
+      throw new Error('No cards of this type left', {
+        cause: { type, rarities },
+      })
     }
     this.#state.selectedCard = card as ICard
     return this
   }
-  dismissCard(success: boolean): IGame {
+  dismissCard(success: boolean | undefined): IGame {
+    if (typeof success == undefined) {
+      this.#state.selectedCard = null
+    }
     if (!this.#state.selectedCard) {
       this.pickNextPlayer()
       return this
@@ -216,19 +244,41 @@ export class Game implements IGame {
     }
     if (success) {
       this.#state.currentPlayer?.addPoints(points)
+      this.putHistory({
+        action: `Прие карта и спечели ${
+          pointsByRarity.get(this.#state.selectedCard.getRarity()) ?? ''
+        } точки`,
+        card: this.getCurrentCard() ?? undefined,
+        player: this.getCurrentPlayer(),
+      })
       if (this.#state.currentPlayer.getPoints() >= this.#state.maxPoints) {
+        this.putHistory({
+          action: 'Won',
+          player: this.getCurrentPlayer(),
+        })
         this.endGame()
         return this
       }
     } else {
       this.#state.currentPlayer?.addPoints(-1 * points)
       const currentPoints = this.#state.currentPlayer.getPoints()
+      this.putHistory({
+        action: `Отказа карта и загуби ${
+          pointsByRarity.get(this.#state.selectedCard.getRarity()) ?? ''
+        } точки`,
+        card: this.getCurrentCard() ?? undefined,
+        player: this.getCurrentPlayer(),
+      })
       if (currentPoints < 0) {
         this.#state.currentPlayer.setState('DISQUALIFIED')
+        this.putHistory({
+          action: 'Дисквалифициран',
+          player: this.getCurrentPlayer(),
+        })
       }
     }
-    this.pickNextPlayer()
     this.#state.selectedCard = null
+    this.pickNextPlayer()
     return this
   }
   moveCurrentPlayerBy(steps: number): IGame {
@@ -237,6 +287,7 @@ export class Game implements IGame {
     const nextTile = currentPlayerTile + steps
     const tileIndex = nextTile % this.#state.tiles.length
     this.setPlayerLocation(this.#state.currentPlayer, tileIndex)
+
     return this
   }
   setPlayerLocation(player: IPlayer, index: number): IGame {
@@ -249,6 +300,7 @@ export class Game implements IGame {
     const value = _.sample(array) as number
     this.#state.currentDiceValue = value
     // this.moveCurrentPlayerBy(value)
+
     return this
   }
   getDice(): number {
@@ -264,6 +316,7 @@ export class Game implements IGame {
       tiles: this.#state.tiles.map((tile) => tile.toJSON()),
       currentPlayer: this.#state.currentPlayer?.toJSON() ?? null,
       selectedCard: this.#state.selectedCard?.toJSON() ?? null,
+      history: this.historyToJSON(),
     }
   }
   restoreGame(options: GameJsonState): IGame {
@@ -289,8 +342,83 @@ export class Game implements IGame {
       cards,
       players,
       tiles,
+      history:
+        options.history?.map((h) => {
+          const card = cards.find((c) => c.getId() == h.cardId)
+          const player = players.find((p) => p.getName() == h.playerName)
+
+          return {
+            card,
+            createdAt: h.createdAt,
+            id: h.id,
+            player,
+            action: h.action,
+          }
+        }) ?? [],
     }
 
     return this
+  }
+
+  // history
+  getHistory(): GameInnerState['history'] {
+    return this.#state.history
+  }
+
+  clearHistory(): IGame {
+    this.#state.history = []
+    return this
+  }
+
+  deleteHistory(id: string): IGame {
+    this.#state.history = this.#state.history.filter((entry) => entry.id != id)
+    return this
+  }
+
+  getLatestHistory(): GameInnerState['history'][number] | undefined {
+    return this.#state.history?.[0]
+  }
+
+  putHistory(input: Partial<GameInnerState['history'][number]>): IGame {
+    const found = this.getHistory().find((entry) => entry.id == input.id)
+    if (!input.action || found?.action) {
+      throw new Error('Cannot have history without aciton')
+    }
+    const entry: GameInnerState['history'][number] = {
+      id: input.id ?? found?.id ?? v4(),
+      action: input.action ?? found?.action,
+      createdAt: input.createdAt ?? found?.createdAt ?? Date.now(),
+      card: input?.card ?? found?.card ?? undefined,
+      player: input?.player ?? found?.player ?? undefined,
+    }
+    if (found) {
+      const index = this.#state.history.findIndex((item) => item.id == found.id)
+      this.#state.history = [
+        ...this.#state.history.slice(0, index),
+        entry,
+        ...this.#state.history.slice(index + 1),
+      ]
+
+      return this
+    }
+    this.#state.history.unshift(entry)
+    return this
+  }
+  updateLatestHistory(input: GameInnerState['history'][number]): IGame {
+    if (!this.getLatestHistory()) return this
+    this.#state.history[0] = input
+    return this
+  }
+
+  historyToJSON(): GameJsonState['history'] {
+    return (
+      this.#state.history.map((h) => ({
+        id: h.id,
+        cardId: h.card?.getId(),
+        playerName: h.player?.getName(),
+        createdAt: h.createdAt,
+        action: h.action,
+      })) ?? []
+    )
   }
 }

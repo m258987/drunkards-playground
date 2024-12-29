@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import { predefinedColors } from '@/constants/predefined-colors'
 import { predefinedIcons } from '@/constants/predefined-icons'
+import packageJson from '../../../package.json' assert { type: 'json' }
+
 const schema = z.object({
   players: z
     .array(
@@ -32,7 +34,7 @@ const schema = z.object({
       })
     )
     .min(2, 'Минимум 2-ма играчи. Не може да си играеш сам...')
-    .max(10, 'Макс 10, няма повече пионики...'),
+    .max(14, 'Макс 14, няма повече пионики...'),
   maxPoints: z.coerce
     .number()
     .min(10, 'Максималните точки трябва да са поне 10')
@@ -69,6 +71,7 @@ export const AddPlayersForm = () => {
               new Player(player.name, { color: predefinedColors[i] })
           )
         )
+        .setMaxPoints(data.maxPoints)
         .startGame()
 
       return game
@@ -78,7 +81,7 @@ export const AddPlayersForm = () => {
     <Form {...form}>
       <form
         id="players-form"
-        className="flex flex-col space-y-4"
+        className="flex flex-col space-y-4 overflow-y-auto overflow-x-hidden"
         onSubmit={form.handleSubmit(handleSubmit, console.error)}
       >
         {players.fields.map((playerField, i) => {
@@ -96,7 +99,7 @@ export const AddPlayersForm = () => {
                         style={{ background: predefinedColors[i] }}
                         className="border-2 border-input h-9 w-9 min-w-9 min-h-9 rounded-full flex justify-center items-center"
                       >
-                        <Icon className="w-4 h-4 text-white drop-shadow-xl" />
+                        <Icon className="w-4 h-4 text-white mix-blend-difference drop-shadow-xl" />
                       </div>
                       <FormControl>
                         <Input
@@ -109,6 +112,7 @@ export const AddPlayersForm = () => {
                         disabled={i == 0 || players.fields.length <= 1}
                         onClick={() => players.swap(i, i - 1)}
                         size="icon"
+                        type="button"
                         variant={'outline'}
                       >
                         <ChevronUpIcon />
@@ -116,6 +120,7 @@ export const AddPlayersForm = () => {
                       <Button
                         disabled={i == players.fields.length - 1}
                         onClick={() => players.swap(i, i + 1)}
+                        type="button"
                         size="icon"
                         variant={'outline'}
                       >
@@ -124,6 +129,7 @@ export const AddPlayersForm = () => {
                       <Button
                         disabled={players.fields.length <= 1}
                         onClick={() => players.remove(i)}
+                        type="button"
                         size="icon"
                         variant={'outline'}
                       >
@@ -139,10 +145,20 @@ export const AddPlayersForm = () => {
         })}
         <Button
           type="button"
-          disabled={players.fields.length >= 10}
+          disabled={players.fields.length >= 14}
           onClick={() => players.append({ name: '' }, { shouldFocus: true })}
         >
           <PlusCircleIcon /> Добави играч
+        </Button>
+        <Button
+          type="button"
+          variant={'outline'}
+          onClick={() => {
+            localStorage.removeItem(`game@${process.env.version}`)
+            location.reload()
+          }}
+        >
+          Нулирай
         </Button>
         <hr />
         <FormField

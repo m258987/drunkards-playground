@@ -19,17 +19,31 @@ export type GameInnerState = {
   currentPlayer: IPlayer | null
   currentDiceValue: number
   maxPoints: number
+  history: {
+    id: string
+    action: string
+    card?: ICard
+    player?: IPlayer
+    createdAt: number
+  }[]
 }
 
 export type GameJsonState = Omit<
   GameInnerState,
-  'players' | 'cards' | 'tiles' | 'currentPlayer' | 'selectedCard'
+  'players' | 'cards' | 'tiles' | 'currentPlayer' | 'selectedCard' | 'history'
 > & {
   tiles: TileInnerState[]
   players: PlayerInnerState[]
   cards: CardInnerState[]
   currentPlayer: PlayerInnerState | null
   selectedCard: CardInnerState | null
+  history: {
+    id: string
+    cardId?: string
+    action: string
+    playerName?: string
+    createdAt: number
+  }[]
 }
 
 // keep somehow in state? Or use React class comp?
@@ -49,13 +63,13 @@ export interface IGame {
   getTiles(): ITile[]
   getActiveTiles(): ITile[]
   getPlayerLocation(player: IPlayer): ITile
-  getTilePlayers(tileIndex: number): IPlayer[]
+  getTilePlayers(tileIndex: number, activeOnly?: boolean): IPlayer[]
   getCurrentCard(): ICard | null
   getCurrentPlayer(): IPlayer
   // game actions
   pickNextPlayer(): IGame
   pickCard(tile: ITile): IGame
-  dismissCard(success: boolean): IGame
+  dismissCard(success: boolean | undefined): IGame
   rollDice(): IGame
   moveCurrentPlayerBy(steps: number): IGame
   setPlayerLocation(player: IPlayer, index: number): IGame
@@ -67,6 +81,15 @@ export interface IGame {
   // restore the game from localstorage
   restoreGame(options: GameJsonState): IGame
   toJSON(): GameJsonState
+
+  // history
+  getLatestHistory(): GameInnerState['history'][number] | undefined
+  putHistory(input: Partial<GameInnerState['history'][number]>): IGame
+  updateLatestHistory(input: GameInnerState['history'][number]): IGame
+  deleteHistory(id: string): IGame
+  clearHistory(): IGame
+  getHistory(): GameInnerState['history']
+  historyToJSON(): GameJsonState['history']
 }
 
 export type TileType = ActionType | 'NAUGHTY' | 'START'
@@ -120,6 +143,7 @@ export interface ICardConstructorOptions {
   // use legendary only on special fields
   rarity: CardRarity
   value: string
+  author?: string
 }
 
 export type CardInnerState = {
@@ -127,6 +151,7 @@ export type CardInnerState = {
   type: ActionType
   rarity: CardRarity
   value: string
+  author?: string
 }
 
 export interface ICard {
@@ -135,6 +160,7 @@ export interface ICard {
   getRarity(): CardRarity
   getType(): ActionType
   getId(): string
+  getAuthor(): string | undefined
   toJSON(): ICardConstructorOptions
 }
 

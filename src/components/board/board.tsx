@@ -67,21 +67,38 @@ export const Board = () => {
             {game.getTiles().map((tile, i) => {
               const gridColumnStart = edgeCoordinates[i]?.[1] + 1
               const gridRowStart = edgeCoordinates[i]?.[0] + 1
-              const players = game.getTilePlayers(tile.getIndex())
+              const players = game.getTilePlayers(tile.getIndex(), true)
+              const isActive = players.some(
+                (p) => p.getName() == game.getCurrentPlayer().getName()
+              )
 
               return (
                 <li
                   key={i}
                   className={cn(
-                    'flex justify-center items-center',
-                    players.length > 0 ? 'ring-4 ring-black ring-offset-2' : ''
+                    'flex justify-center items-center relative',
+                    isActive ? 'ring-4 ring-black ring-offset-2' : ''
                   )}
                   style={{ gridColumnStart, gridRowStart }}
                 >
-                  <span key={i} className="flex flex-wrap gap-2">
+                  <span
+                    key={i}
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.ceil(
+                        players.length / 2
+                      )}, minmax(0,1fr))`,
+                      gridTemplateRows: 'minmax(1fr,2fr)',
+                    }}
+                    className="absolute inset-0 w-full h-full grid grid-rows-2 justify-items-start gap-0.5 p-2 pr-8"
+                  >
                     {/* {tile.getIndex()} {tile.getType()} */}
-                    {players?.map((player) => (
-                      <Pawn key={player.getName()} player={player} />
+                    {players?.map((player, i, { length }) => (
+                      <Pawn
+                        style={{ zIndex: length - i }}
+                        className="min-w-0 min-h-0 mx-auto"
+                        key={player.getName()}
+                        player={player}
+                      />
                     ))}
                   </span>
                 </li>
@@ -95,6 +112,7 @@ export const Board = () => {
           <PickedCard />
         </figure>
         <Leaderboard />
+
         <RestartGameButton />
       </div>
     )

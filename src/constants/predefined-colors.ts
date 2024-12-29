@@ -9,4 +9,8 @@ export const predefinedColors = [
   'brown',
   'black',
   'darkcyan',
+  'chocolate',
+  'blueviolet',
+  'chartreuse',
+  'crimson',
 ]

@@ -15,6 +15,7 @@ export class Card implements ICard {
     this.#state.rarity = options.rarity
     this.#state.type = options.type
     this.#state.value = options.value
+    this.#state.author = options.author
   }
   getId(): string {
     return this.#state.id
@@ -27,6 +28,9 @@ export class Card implements ICard {
   }
   getValue(): string {
     return this.#state.value
+  }
+  getAuthor(): string | undefined {
+    return this.#state.author
   }
   toJSON(): ICardConstructorOptions {
     return {

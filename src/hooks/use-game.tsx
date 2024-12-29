@@ -1,5 +1,5 @@
 'use client'
-import { cards } from '@/constants/deck'
+import { cards } from '@/constants/default-deck'
 import { tiles } from '@/constants/tiles'
 import { Deck } from '@/models/deck'
 import { Game } from '@/models/game'
@@ -42,12 +42,15 @@ export const GameProvider = (props: {
     callback(game.current as IGame)
     setTimeout(() => {
       setVersion((ps) => ps + 1)
-      localStorage.setItem('game', JSON.stringify(game.current?.toJSON()))
+      localStorage.setItem(
+        `game@${process.env.version}`,
+        JSON.stringify(game.current?.toJSON())
+      )
     }, 0)
     return game.current as IGame
   }
   useEffect(() => {
-    const localGame = localStorage.getItem('game')
+    const localGame = localStorage.getItem(`game@${process.env.version}`)
     if (!localGame) return
     // todo must use ZOD here
     const gameState: GameJsonState | null = JSON.parse(localGame) ?? null
