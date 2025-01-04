@@ -1,6 +1,6 @@
 import { useGame } from '@/hooks/use-game'
 import { getEdgeCoordinates } from '@/lib/get-edge-coordiates'
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { AddPlayersForm } from './add-players.form'
 import Actions from './actions'
 import { PickedCard } from './picked-card'
@@ -112,9 +112,33 @@ export const Board = () => {
           <PickedCard />
         </figure>
         <Leaderboard />
-
+        <AutoPlayButton />
         <RestartGameButton />
       </div>
     )
   }
+}
+
+function AutoPlayButton() {
+  const onClick = useCallback(async () => {
+    let diceButton: HTMLButtonElement | null
+    let acceptButton: HTMLButtonElement | null
+    do {
+      diceButton = document.querySelector<HTMLButtonElement>('#dice-btn')
+      acceptButton = document.querySelector<HTMLButtonElement>('#do-btn')
+      diceButton?.click()
+      await new Promise((r) =>
+        setTimeout(() => {
+          r(undefined)
+        }, 4000)
+      )
+      acceptButton?.click()
+    } while (diceButton && acceptButton)
+  }, [])
+  if (process.env.NODE_ENV != 'development') return null
+  return (
+    <button className="fixed bottom-2 right-2" onClick={onClick}>
+      AutoPlay
+    </button>
+  )
 }

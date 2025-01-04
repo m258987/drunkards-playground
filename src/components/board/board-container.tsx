@@ -1,9 +1,8 @@
 'use client'
 
-import { cards } from '@/constants/default-deck'
+import { DEFAULT_DECK } from '@/constants/_default-deck'
 import { tiles } from '@/constants/tiles'
 import { GameProvider } from '@/hooks/use-game'
-import { Deck } from '@/models/deck'
 import { Game } from '@/models/game'
 import { Tile } from '@/models/tile'
 import { TooltipProvider } from '../ui/tooltip'
@@ -15,7 +14,7 @@ export const BoardContainer = () => {
       <GameProvider
         game={
           new Game({
-            cards: new Deck({ cards }).getCards(),
+            deck: DEFAULT_DECK,
             players: [],
             tiles: tiles.map(
               (tile, i) => new Tile(i, tile.type, tile.rarities)

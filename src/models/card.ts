@@ -1,3 +1,4 @@
+import { v4 } from 'uuid'
 import {
   ActionType,
   CardInnerState,
@@ -11,7 +12,8 @@ export class Card implements ICard {
 
   constructor(options: ICardConstructorOptions) {
     this.#state = {} as CardInnerState
-    this.#state.id = options.id
+    this.#state.points = options.points ?? 1
+    this.#state.id = options.id ?? v4()
     this.#state.rarity = options.rarity
     this.#state.type = options.type
     this.#state.value = options.value
@@ -32,12 +34,20 @@ export class Card implements ICard {
   getAuthor(): string | undefined {
     return this.#state.author
   }
+  duplicate(): ICard {
+    return new Card({ ...this.#state, id: v4() })
+  }
+  getPoints(): number {
+    return this.#state.points
+  }
   toJSON(): ICardConstructorOptions {
     return {
       id: this.#state.id,
       type: this.#state.type,
       rarity: this.#state.rarity,
       value: this.#state.value,
+      points: this.#state.points,
+      author: this.#state.author,
     }
   }
 }

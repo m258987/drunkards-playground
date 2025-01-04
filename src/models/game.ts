@@ -1,11 +1,12 @@
-import { pointsByRarity } from '@/constants/points-by-rarity'
 import { Card } from './card'
 import {
+  ActionType,
   GameInnerState,
   GameJsonState,
   GameState,
   ICard,
   ICardConstructorOptions,
+  IDeck,
   IGame,
   IGameConstructorOptions,
   IPlayer,
@@ -17,31 +18,29 @@ import { Player } from './player'
 import { Tile } from './tile'
 import { v4 } from 'uuid'
 import { toast } from 'sonner'
+import { Deck } from './deck'
 
 export class Game implements IGame {
-  #state: GameInnerState = {
-    maxPoints: 35,
-    id: v4(),
-    state: 'PREGAME',
-    players: [],
-    tiles: [],
-    cards: [],
-    currentDiceValue: 0,
-    currentPlayer: null,
-    selectedCard: null,
-    usedCards: [],
-    history: [],
-  }
+  #state: GameInnerState
 
   constructor(options: IGameConstructorOptions) {
-    this.#state.state = 'PREGAME'
-    this.#state.players = options.players
-    this.#state.tiles = options.tiles
-    this.#state.cards = options.cards
-    this.#state.usedCards = []
+    this.#state = {
+      maxPoints: 35,
+      id: v4(),
+      state: 'PREGAME',
+      players: options.players ?? [],
+      tiles: options.tiles ?? [],
+      deck: options.deck,
+      currentDiceValue: 0,
+      currentPlayer: null,
+      history: [],
+    }
   }
   getId(): string {
     return this.#state.id
+  }
+  getDeck(): IDeck {
+    return this.#state.deck
   }
   getState(): GameState {
     return this.#state.state
@@ -118,8 +117,7 @@ export class Game implements IGame {
   restartGame(): IGame {
     if (this.#state.state == 'PREGAME') return this
     this.#state.state = 'PREGAME'
-    this.#state.selectedCard = null
-    this.#state.usedCards = []
+    this.#state.deck.resetDeck()
     this.#state.history = []
     this.#state.players.forEach((p) => {
       p.setState('ACTIVE').setPoints(0).setTile(0)
@@ -128,9 +126,6 @@ export class Game implements IGame {
     return this
   }
 
-  getCurrentCard(): ICard | null {
-    return this.#state.selectedCard
-  }
   getPlayerLocation(player: IPlayer): ITile {
     const tile = this.#state.tiles.find(
       (tile) => tile.getIndex() == player.getTile()
@@ -210,25 +205,20 @@ export class Game implements IGame {
     }
     const type = tile.getType()
     const rarities = tile.getAllowedRarities()
-    const cardsOfType = this.#state.cards.filter(
-      (card) => card.getType() == type && rarities.includes(card.getRarity())
-    )
-    const card = _.sample(cardsOfType)
-    if (typeof card == 'undefined') {
-      // handle this or end game?
-      console.error(type, rarities)
-      throw new Error('No cards of this type left', {
-        cause: { type, rarities },
-      })
-    }
-    this.#state.selectedCard = card as ICard
+
+    this.#state.deck.drawCard({ rarities, types: [type as ActionType] })
     return this
   }
   dismissCard(success: boolean | undefined): IGame {
+    console.warn('DISMISS CARD')
+
     if (typeof success == undefined) {
-      this.#state.selectedCard = null
+      this.#state.deck.removeSelection()
     }
-    if (!this.#state.selectedCard) {
+    const selected = this.#state.deck.getSelectedCard()
+    console.log('Selected', selected)
+
+    if (!selected) {
       this.pickNextPlayer()
       return this
     }
@@ -236,19 +226,17 @@ export class Game implements IGame {
       this.pickNextPlayer()
       return this
     }
-    this.#state.usedCards.push(this.#state.selectedCard as ICard)
-    const rarity = this.#state.selectedCard.getRarity()
-    const points = pointsByRarity.get(rarity)
+
+    const points = selected.getPoints()
     if (!points) {
       return this
     }
+
     if (success) {
       this.#state.currentPlayer?.addPoints(points)
       this.putHistory({
-        action: `Прие карта и спечели ${
-          pointsByRarity.get(this.#state.selectedCard.getRarity()) ?? ''
-        } точки`,
-        card: this.getCurrentCard() ?? undefined,
+        action: `Прие карта и спечели ${points ?? ''} точки`,
+        card: selected ?? undefined,
         player: this.getCurrentPlayer(),
       })
       if (this.#state.currentPlayer.getPoints() >= this.#state.maxPoints) {
@@ -263,10 +251,8 @@ export class Game implements IGame {
       this.#state.currentPlayer?.addPoints(-1 * points)
       const currentPoints = this.#state.currentPlayer.getPoints()
       this.putHistory({
-        action: `Отказа карта и загуби ${
-          pointsByRarity.get(this.#state.selectedCard.getRarity()) ?? ''
-        } точки`,
-        card: this.getCurrentCard() ?? undefined,
+        action: `Отказа карта и загуби ${points} точки`,
+        card: selected ?? undefined,
         player: this.getCurrentPlayer(),
       })
       if (currentPoints < 0) {
@@ -277,7 +263,7 @@ export class Game implements IGame {
         })
       }
     }
-    this.#state.selectedCard = null
+    this.#state.deck.removeSelection()
     this.pickNextPlayer()
     return this
   }
@@ -311,16 +297,20 @@ export class Game implements IGame {
   toJSON(): GameJsonState {
     return {
       ...this.#state,
-      cards: this.#state.cards.map((card) => card.toJSON()),
+      deck: this.#state.deck.toJSON(),
       players: this.#state.players.map((player) => player.toJSON()),
       tiles: this.#state.tiles.map((tile) => tile.toJSON()),
       currentPlayer: this.#state.currentPlayer?.toJSON() ?? null,
-      selectedCard: this.#state.selectedCard?.toJSON() ?? null,
       history: this.historyToJSON(),
     }
   }
   restoreGame(options: GameJsonState): IGame {
-    const cards = options.cards.map((card) => new Card(card))
+    const cards = options.deck.cards.map((card) => new Card(card))
+    const deck = new Deck({
+      cards,
+      drawnIds: options.deck.drawnIds,
+      selectedCardId: options.deck.selectedCardId,
+    })
     const players = options.players.map(
       (player) => new Player(player.name, player)
     )
@@ -330,16 +320,11 @@ export class Game implements IGame {
     const currentPlayer = options.currentPlayer
       ? players.find((p) => p.getName() == options.currentPlayer?.name) ?? null
       : null
-    const selectedCard = options.selectedCard
-      ? cards.find((c) => c.getId() == options.selectedCard?.id) ?? null
-      : null
 
     this.#state = {
       ...options,
-      selectedCard,
       currentPlayer,
-      usedCards: [],
-      cards,
+      deck,
       players,
       tiles,
       history:

@@ -1,11 +1,13 @@
-// todo make everyting a zod schema?
+/**
+ * GAME
+ */
 
 export type GameState = 'PREGAME' | 'PLAYING' | 'END'
 
 export interface IGameConstructorOptions {
   players: IPlayer[]
   tiles: ITile[]
-  cards: ICard[]
+  deck: IDeck
 }
 
 export type GameInnerState = {
@@ -13,9 +15,7 @@ export type GameInnerState = {
   state: GameState
   players: IPlayer[]
   tiles: ITile[]
-  cards: ICard[]
-  usedCards: ICard[]
-  selectedCard: ICard | null
+  deck: IDeck
   currentPlayer: IPlayer | null
   currentDiceValue: number
   maxPoints: number
@@ -30,13 +30,12 @@ export type GameInnerState = {
 
 export type GameJsonState = Omit<
   GameInnerState,
-  'players' | 'cards' | 'tiles' | 'currentPlayer' | 'selectedCard' | 'history'
+  'players' | 'deck' | 'tiles' | 'currentPlayer' | 'history'
 > & {
   tiles: TileInnerState[]
   players: PlayerInnerState[]
-  cards: CardInnerState[]
   currentPlayer: PlayerInnerState | null
-  selectedCard: CardInnerState | null
+  deck: DeckJSONState
   history: {
     id: string
     cardId?: string
@@ -51,6 +50,7 @@ export interface IGame {
   //  methods
   getId(): string
   getState(): GameState
+  getDeck(): IDeck
   getMaxPoints(): number
   setMaxPoints(number: number): IGame
   addPlayer(player: IPlayer): IGame
@@ -64,7 +64,7 @@ export interface IGame {
   getActiveTiles(): ITile[]
   getPlayerLocation(player: IPlayer): ITile
   getTilePlayers(tileIndex: number, activeOnly?: boolean): IPlayer[]
-  getCurrentCard(): ICard | null
+
   getCurrentPlayer(): IPlayer
   // game actions
   pickNextPlayer(): IGame
@@ -92,6 +92,10 @@ export interface IGame {
   historyToJSON(): GameJsonState['history']
 }
 
+/**
+ * TILE
+ */
+
 export type TileType = ActionType | 'NAUGHTY' | 'START'
 
 export type TileInnerState = {
@@ -107,6 +111,10 @@ export interface ITile {
   getAllowedRarities(): [CardRarity, ...CardRarity[]]
   toJSON(): TileInnerState
 }
+
+/**
+ * PLAYER
+ */
 
 export type PlayerState = 'ACTIVE' | 'DISQUALIFIED'
 export type PlayerHistory = { name: string }
@@ -134,16 +142,21 @@ export interface IPlayer {
   toJSON(): PlayerInnerState
 }
 
+/**
+ * CARD
+ */
+
 export type ActionType = 'DRINK' | 'DARE' | 'TRUTH' | 'NAUGHTY'
-export type CardRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY'
+export type CardRarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY'
 
 export interface ICardConstructorOptions {
-  id: string
+  id?: string
   type: ActionType
   // use legendary only on special fields
   rarity: CardRarity
   value: string
   author?: string
+  points: number
 }
 
 export type CardInnerState = {
@@ -152,6 +165,7 @@ export type CardInnerState = {
   rarity: CardRarity
   value: string
   author?: string
+  points: number
 }
 
 export interface ICard {
@@ -160,14 +174,38 @@ export interface ICard {
   getRarity(): CardRarity
   getType(): ActionType
   getId(): string
+  getPoints(): number
   getAuthor(): string | undefined
   toJSON(): ICardConstructorOptions
+  duplicate(): ICard
 }
 
+/**
+ * DECK
+ */
+
+export type DeckJSONState = {
+  selectedCardId: string | null
+  cards: ICardConstructorOptions[]
+  drawnIds: string[]
+}
 export interface IDeckConstructor {
-  cards: Array<Omit<ICardConstructorOptions, 'id'> & { count: number }>
+  cards: ICard[]
+  drawnIds: string[]
+  selectedCardId: string | null
 }
 
 export interface IDeck {
+  addCards(cards: ICard): IDeck
+  removeCard(id: string): IDeck
   getCards(): ICard[]
+  getDrawnCards(): ICard[]
+  getUndrawnCards(): ICard[]
+  drawCard(options?: { rarities?: CardRarity[]; types?: ActionType[] }): ICard
+  getSelectedCard(): ICard | null
+  removeSelection(): IDeck
+  resetDeck(): IDeck
+  shuffle(cards: ICard[]): ICard[]
+
+  toJSON(): DeckJSONState
 }

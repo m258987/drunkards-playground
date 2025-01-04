@@ -5,6 +5,7 @@ export const colorsByRarity = new Map<
   string
 >([
   ['COMMON', 'gray'],
+  ['COMMON', 'darkgray'],
   ['RARE', 'blue'],
   ['EPIC', 'purple'],
   ['LEGENDARY', 'orange'],

@@ -1,10 +1,11 @@
 'use client'
-import { cards } from '@/constants/default-deck'
+
+import { DEFAULT_DECK } from '@/constants/_default-deck'
 import { tiles } from '@/constants/tiles'
-import { Deck } from '@/models/deck'
 import { Game } from '@/models/game'
 import { Tile } from '@/models/tile'
-import { GameJsonState, IGame, IPlayer } from '@/models/types'
+import { GameJsonState, IGame } from '@/models/types'
+import { Loader2 } from 'lucide-react'
 import {
   createContext,
   ReactNode,
@@ -13,7 +14,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { json } from 'stream/consumers'
 
 interface IGameContext {
   game: IGame
@@ -26,17 +26,18 @@ export const GameProvider = (props: {
   game?: IGame | undefined
 }) => {
   const [version, setVersion] = useState(0)
+  const [isPending, setPending] = useState(true)
 
   const game = useRef<IGame | null>(props.game ?? null)
   if (typeof game.current == 'undefined') {
-    const currentDeck = new Deck({ cards })
+    const currentDeck = DEFAULT_DECK
     game.current = new Game({
-      cards: currentDeck.getCards(),
+      deck: currentDeck,
       players: [],
       tiles: tiles.map((tile, i) => new Tile(i, tile.type, tile.rarities)),
     })
   }
-  console.log(game.current?.toJSON())
+  console.log('GAMESTATE', game.current?.toJSON())
 
   function updater(callback: (game: IGame) => IGame): IGame {
     callback(game.current as IGame)
@@ -60,13 +61,20 @@ export const GameProvider = (props: {
         return game
       })
     }
+    setPending(false)
   }, [])
 
   return (
     <GameContext.Provider
       value={{ game: game.current as IGame, setGame: updater }}
     >
-      {props.children}
+      {isPending ? (
+        <div className="fixed inset-0 flex items-center justify-center">
+          <Loader2 className="!animate-spin size-8" />
+        </div>
+      ) : (
+        props.children
+      )}
     </GameContext.Provider>
   )
 }

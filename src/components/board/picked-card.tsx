@@ -12,7 +12,7 @@ import {
 } from '../ui/card'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
-import { pointsByRarity } from '@/constants/points-by-rarity'
+
 import { DialogTitle } from '@radix-ui/react-dialog'
 import _ from 'lodash'
 import handlebars from 'handlebars'
@@ -34,7 +34,9 @@ import { AlertDialogAction } from '@radix-ui/react-alert-dialog'
 
 export const PickedCard = () => {
   const [game, setGame] = useGame()
-  const currentCard = game.getCurrentCard()
+  const currentCard = game.getDeck().getSelectedCard()
+  console.log('CURRENT CARD', currentCard)
+
   const currentPlayer = game.getCurrentPlayer()
   const id = currentCard?.getId()
 
@@ -44,11 +46,11 @@ export const PickedCard = () => {
         .getActivePlayers()
         ?.filter((p) => p.getName() != game.getCurrentPlayer().getName())
     )
-    console.log('Rerun of random player', result?.getName(), id)
+    // console.log('Rerun of random player', result?.getName(), id)
 
     return result
   }, [id])
-  console.log('randomPlayer', randomPlayer)
+  // console.log('randomPlayer', randomPlayer)
 
   const handlebarsTemplate = useMemo(
     () => ({
@@ -63,7 +65,7 @@ export const PickedCard = () => {
   }, [handlebarsTemplate, randomPlayer, currentCard])
 
   const points = useMemo(
-    () => (currentCard ? pointsByRarity.get(currentCard.getRarity()) : 0),
+    () => (currentCard ? currentCard.getPoints() : 0),
     [id]
   )
 
@@ -96,7 +98,7 @@ export const PickedCard = () => {
 
   return (
     <>
-      <Dialog open={!!game.getCurrentCard()}>
+      <Dialog open={!!currentCard}>
         <DialogContent
           id="card-preview"
           style={
@@ -243,7 +245,10 @@ export const PickedCard = () => {
                     </AlertDialog>
 
                     <Button
+                      id="do-btn"
                       onClick={() => {
+                        console.log('NAPRAVI')
+
                         setGame((game) => {
                           game.dismissCard(true)
                           return game

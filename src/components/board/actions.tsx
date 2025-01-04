@@ -74,8 +74,9 @@ export default function Actions() {
         </strong>
       </p>
       <Button
+        id="dice-btn"
         ref={ref}
-        disabled={!!game.getCurrentCard() || isDicing}
+        disabled={!!game.getDeck().getSelectedCard() || isDicing}
         onClick={handleDiceClick}
       >
         Зар

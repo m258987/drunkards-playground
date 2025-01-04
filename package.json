@@ -21,7 +21,7 @@
     "game",
     "react"
   ],
-  "version": "2.0.1",
+  "version": "2.1.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
