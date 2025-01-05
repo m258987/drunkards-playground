@@ -307,6 +307,7 @@ export class Game implements IGame {
   restoreGame(options: GameJsonState): IGame {
     const cards = options.deck.cards.map((card) => new Card(card))
     const deck = new Deck({
+      id: options.deck.id,
       cards,
       drawnIds: options.deck.drawnIds,
       selectedCardId: options.deck.selectedCardId,

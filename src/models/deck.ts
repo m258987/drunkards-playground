@@ -6,6 +6,7 @@ import { probabilityByRarity } from '@/constants/probability-by-rarity'
 import { NotFoundError } from '@/lib/errors'
 
 export class Deck implements IDeck {
+  #id: string
   #selectedCard: ICard | null
   #cards: ICard[]
   #drawn: ICard[]
@@ -13,6 +14,7 @@ export class Deck implements IDeck {
   constructor(options: IDeckConstructor) {
     if (!options.cards.length)
       throw new Error('A deck must have at least one card')
+    this.#id = options?.id ?? v4()
     this.#cards = options.cards
     this.#undrawn = this.#cards.filter(
       (c) => !options.drawnIds.includes(c.getId())
@@ -128,6 +130,7 @@ export class Deck implements IDeck {
 
   toJSON() {
     return {
+      id: this.#id,
       selectedCardId: this.#selectedCard?.getId() ?? null,
       cards: this.#cards.map((c) => c.toJSON()),
       drawnIds: this.#drawn.map((c) => c.getId()),

@@ -188,8 +188,10 @@ export type DeckJSONState = {
   selectedCardId: string | null
   cards: ICardConstructorOptions[]
   drawnIds: string[]
+  id: string
 }
 export interface IDeckConstructor {
+  id?: string
   cards: ICard[]
   drawnIds: string[]
   selectedCardId: string | null

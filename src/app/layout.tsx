@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Shantell_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'sonner'
+import MenuProvider from '@/components/menu/menu-provider'
 
 const shantell = Shantell_Sans({
   variable: '--shantell',
@@ -55,8 +56,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${shantell.variable} antialiased`}
       >
-        {children}
-        <Toaster />
+        <MenuProvider>
+          {children}
+          <Toaster />
+        </MenuProvider>
       </body>
     </html>
   )

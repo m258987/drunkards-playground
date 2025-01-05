@@ -1,7 +1,7 @@
 import { useGame } from '@/hooks/use-game'
 import React from 'react'
 import { Button } from '../ui/button'
-import { RotateCcwIcon } from 'lucide-react'
+import { MenuIcon, RotateCcwIcon } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,49 +13,56 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../ui/alert-dialog'
+import { useRouter } from 'next/navigation'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { getShorcutString } from '@/constants/shortcuts'
+import { useEventListener } from 'usehooks-ts'
+import { IS_APPLE } from '@/constants/environment'
+import { useMenu } from '../menu/menu-provider'
 
-export const RestartGameButton = () => {
-  const [game, setGame] = useGame()
+export const MainMenuButton = () => {
+  const { setStage, actions } = useMenu()
+  const router = useRouter()
 
-  function handleRestart() {
-    setGame((game) => {
-      game.restartGame()
-      return game
-    })
+  function handleClick() {
+    setStage('main')
+    router.push('/')
   }
+
+  useEventListener('keydown', (e) => {
+    if (e.key == 'M' && IS_APPLE ? e.metaKey : e.ctrlKey) {
+      alert('Cauth')
+      e.preventDefault()
+      handleClick()
+    }
+  })
   return (
     <AlertDialog>
-      <Tooltip delayDuration={100}>
+      <Tooltip>
         <AlertDialogTrigger asChild>
           <TooltipTrigger asChild>
             <Button size={'icon'}>
-              <RotateCcwIcon />
+              <MenuIcon />
             </Button>
           </TooltipTrigger>
         </AlertDialogTrigger>
-        <TooltipContent>
-          Рестартирай играта {getShorcutString('RESTART')}
-        </TooltipContent>
+        <TooltipContent>Главно меню {getShorcutString('MENU')}</TooltipContent>
       </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Сигурни ли сте, че искате да рестартирате?
+            Сигурни ли сте, че искате да отидете в менюто?
           </AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription>
-          Целият прогрес ще бъде изгубен.
+          Играта ви ще бъде запазена докато не натиснете бутона "Нова игра"
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button variant={'outline'}>Отказ</Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button onClick={handleRestart} variant={'destructive'}>
-              Рестартирай
-            </Button>
+            <Button onClick={handleClick}>Отиди в главното меню</Button>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

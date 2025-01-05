@@ -1,7 +1,10 @@
 'use client'
 
+import { useMenu } from '@/components/menu/menu-provider'
 import { DEFAULT_DECK } from '@/constants/_default-deck'
 import { tiles } from '@/constants/tiles'
+import { getGameVersion } from '@/lib/get-game-version'
+import { Deck } from '@/models/deck'
 import { Game } from '@/models/game'
 import { Tile } from '@/models/tile'
 import { GameJsonState, IGame } from '@/models/types'
@@ -21,40 +24,29 @@ interface IGameContext {
 }
 const GameContext = createContext<IGameContext>(undefined!)
 
-export const GameProvider = (props: {
-  children: ReactNode
-  game?: IGame | undefined
-}) => {
+export const GameProvider = (props: { children: ReactNode; game: IGame }) => {
+  const { actions, setGame, deck } = useMenu()
   const [version, setVersion] = useState(0)
   const [isPending, setPending] = useState(true)
 
   const game = useRef<IGame | null>(props.game ?? null)
-  if (typeof game.current == 'undefined') {
-    const currentDeck = DEFAULT_DECK
-    game.current = new Game({
-      deck: currentDeck,
-      players: [],
-      tiles: tiles.map((tile, i) => new Tile(i, tile.type, tile.rarities)),
-    })
-  }
+
   console.log('GAMESTATE', game.current?.toJSON())
 
   function updater(callback: (game: IGame) => IGame): IGame {
     callback(game.current as IGame)
     setTimeout(() => {
       setVersion((ps) => ps + 1)
-      localStorage.setItem(
-        `game@${process.env.version}`,
-        JSON.stringify(game.current?.toJSON())
-      )
+      setGame(() => game.current?.toJSON() ?? null)
     }, 0)
     return game.current as IGame
   }
   useEffect(() => {
-    const localGame = localStorage.getItem(`game@${process.env.version}`)
+    const localGame = localStorage.getItem(`game@${getGameVersion()}`)
     if (!localGame) return
     // todo must use ZOD here
     const gameState: GameJsonState | null = JSON.parse(localGame) ?? null
+
     if (gameState) {
       updater((game) => {
         game.restoreGame(gameState)
@@ -68,13 +60,7 @@ export const GameProvider = (props: {
     <GameContext.Provider
       value={{ game: game.current as IGame, setGame: updater }}
     >
-      {isPending ? (
-        <div className="fixed inset-0 flex items-center justify-center">
-          <Loader2 className="!animate-spin size-8" />
-        </div>
-      ) : (
-        props.children
-      )}
+      {props.children}
     </GameContext.Provider>
   )
 }

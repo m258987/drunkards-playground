@@ -8,6 +8,8 @@ import React, {
 } from 'react'
 import { Button } from '../ui/button'
 import { Pawn } from './pawn'
+import { getShorcutString } from '@/constants/shortcuts'
+import { useEventListener } from 'usehooks-ts'
 
 export default function Actions() {
   const [game, setGame] = useGame()
@@ -47,17 +49,17 @@ export default function Actions() {
     })
   }
 
-  useEffect(() => {
-    const listener = (e: KeyboardEvent) => {
-      if (e.key == ' ') {
-        ref.current?.click()
-      }
+  useEventListener('keydown', (e) => {
+    const currentDocumentFocus = document.activeElement
+
+    if (
+      e.key == ' ' &&
+      currentDocumentFocus &&
+      currentDocumentFocus.tagName == 'BODY'
+    ) {
+      ref.current?.click()
     }
-    document.addEventListener('keydown', listener)
-    return () => {
-      document.removeEventListener('keydown', listener)
-    }
-  }, [])
+  })
 
   return (
     <div className="absolute right-[12%] top-[12%] flex flex-col items-end text-right space-y-2">
@@ -79,7 +81,7 @@ export default function Actions() {
         disabled={!!game.getDeck().getSelectedCard() || isDicing}
         onClick={handleDiceClick}
       >
-        Зар
+        Зар {getShorcutString('ROLL_DICE')}
       </Button>
       <div>Макс точки: {game.getMaxPoints()}</div>
     </div>

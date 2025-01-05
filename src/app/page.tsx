@@ -1,21 +1,12 @@
-import { BoardContainer } from '@/components/board/board-container'
+import Menu from '@/components/menu/menu'
+import MenuProvider from '@/components/menu/menu-provider'
+import MenuContainer from '@/components/menu/menu-provider'
 import { Metadata } from 'next'
-import Image from 'next/image'
 
 export const metadata: Metadata = {
-  title: "Drunkard's playgorund",
-  description: "Drunkard's playground game by Faslin Kosta",
-  applicationName: "Drunkard's playgorund",
-  appleWebApp: true,
-  creator: 'Faslin Kosta',
-  authors: [
-    { name: 'Faslin Kosta', url: 'https://faslin-kosta.com' },
-    // todo fix
-    { name: 'Tedy Kosta', url: 'https://faslin-kosta.com' },
-  ],
-  generator: 'Faslin Kosta Board and Imagination',
+  title: `Main menu | Drunkard's Playground`,
 }
 
 export default function Home() {
-  return <BoardContainer />
+  return <Menu />
 }

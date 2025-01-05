@@ -11,6 +11,11 @@ import { Logo } from '../logo/logo'
 import { Dice } from './dice'
 import { Pawn } from './pawn'
 import { cn } from '@/lib/utils'
+import { SaveGameButton } from './save-game-btn'
+import { MainMenuButton } from './main-menu-btn'
+import { PlayIcon } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { getShorcutString } from '@/constants/shortcuts'
 
 const BOARD_IMAGE = '/board.webp'
 export const Board = () => {
@@ -55,6 +60,7 @@ export const Board = () => {
   if (game.getState() == 'PLAYING') {
     return (
       <div
+        id="GAME-BOARD"
         key={game.getId()}
         className="fixed bg-pink-400 inset-0 flex items-center justify-start text-[1.5vmin]"
       >
@@ -111,9 +117,17 @@ export const Board = () => {
           <Actions />
           <PickedCard />
         </figure>
-        <Leaderboard />
-        <AutoPlayButton />
-        <RestartGameButton />
+        <div className="[@media(orientation:portrait)]:hidden absolute overflow-y-auto overflow-x-auto right-0 top-0 bottom-0 pt-20 bg-white">
+          <h2>Макс точки: {game.getMaxPoints()}</h2>
+          <LeaderboardTable />
+        </div>
+        <div className="fixed top-2 right-2 gap-2 flex items-center justify-center">
+          <Leaderboard />
+          <AutoPlayButton />
+          <RestartGameButton />
+          <SaveGameButton />
+          <MainMenuButton />
+        </div>
       </div>
     )
   }
@@ -137,8 +151,15 @@ function AutoPlayButton() {
   }, [])
   if (process.env.NODE_ENV != 'development') return null
   return (
-    <button className="fixed bottom-2 right-2" onClick={onClick}>
-      AutoPlay
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button onClick={onClick} size={'icon'}>
+          <PlayIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        Играй си сам {getShorcutString('AUTOPLAY')}
+      </TooltipContent>
+    </Tooltip>
   )
 }

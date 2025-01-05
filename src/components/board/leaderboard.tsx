@@ -22,22 +22,23 @@ import { predefinedIcons } from '@/constants/predefined-icons'
 import { predefinedColors } from '@/constants/predefined-colors'
 import { Pawn } from './pawn'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 export const Leaderboard = () => {
   const [game] = useGame()
   return (
     <>
-      <div className="[@media(orientation:portrait)]:hidden absolute overflow-y-auto overflow-x-auto right-0 top-0 bottom-0 pt-20 bg-white">
-        <h2>Макс точки: {game.getMaxPoints()}</h2>
-        <LeaderboardTable />
-      </div>
-
       <Sheet>
-        <SheetTrigger asChild>
-          <Button className="fixed top-2 right-2" size="icon">
-            <ChartColumnIcon />
-          </Button>
-        </SheetTrigger>
+        <Tooltip delayDuration={100}>
+          <SheetTrigger asChild>
+            <TooltipTrigger asChild>
+              <Button size="icon">
+                <ChartColumnIcon />
+              </Button>
+            </TooltipTrigger>
+          </SheetTrigger>
+          <TooltipContent>Табло с позиции</TooltipContent>
+        </Tooltip>
         <SheetContent className="overflow-y-auto overflow-x-auto">
           <SheetHeader>
             <SheetTitle>Leaderboard</SheetTitle>
